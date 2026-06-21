@@ -11,6 +11,8 @@ def ollama_embed(texts):
             model="nomic-embed-text:latest",
             prompt=t
         )
+        # print (f"\n\nEmbedding for text: {t} is {res.model_dump_json()}")
+        # print(f"\n\nEmbedding for text: {t} is created with dimension count: {len(res['embedding'])}")
         embeddings.append(res["embedding"])
 
     return embeddings
@@ -25,19 +27,26 @@ docs =[
 
 client = chromadb.PersistentClient(path="./chroma_db")
 collection = client.get_or_create_collection(
-    name="ollama_demo_cosine"
-    ,metadata={"hnsw:space": "cosine"}
+    name="ollama_demo_l2"
+    ,metadata={"hnsw:space": "l2"} # Set the distance metric to cosine similarity or "l2" for Euclidean distance or "ip" for inner product or "dot" for dot product
     )
 
 #Create embeddings using ollama
 embeddings = ollama_embed(docs)
-
+# print("Embeddings created using Ollama", embeddings)
 collection.add(
     documents=docs,
     embeddings=embeddings,
     ids=[str(i) for i in range(len(docs))],
 )
+data = collection.get(
+    ids=["1"],
+    include=["embeddings"]
+)
 
+# print("\n\nDocument with ID 1:", data)
+print("\n----------------------------------------------")
+print("Document with ID 1 Embedding -dimension count:", len(data["embeddings"][0]))
 print("Added using Ollama Embeddings")
 
 #Flow -2: Search using Ollama embeddings
